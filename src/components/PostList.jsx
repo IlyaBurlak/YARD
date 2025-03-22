@@ -1,37 +1,15 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { List, Pagination, Card, Spin } from 'antd';
-import axios from 'axios';
+import usePosts from "../hooks/usePosts";
 
 const PostList = () => {
-    const [posts, setPosts] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
-    const [loading, setLoading] = useState(false);
+    const { usePaginatedPosts } = usePosts();
+    const { posts, total, loading, error } = usePaginatedPosts(currentPage);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        const fetchPosts = async () => {
-            setLoading(true);
-            try {
-                const response = await axios.get(
-                    `https://jsonplaceholder.typicode.com/posts?_page=${currentPage}&_limit=10`
-                );
-                const total = response.headers['x-total-count'];
-                setTotalPages(Math.ceil(total / 10));
-
-                const postsWithLocalData = response.data.map(post => {
-                    const localData = localStorage.getItem(`post-${post.id}`);
-                    return localData ? { ...post, ...JSON.parse(localData) } : post;
-                });
-
-                setPosts(postsWithLocalData);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchPosts();
-    }, [currentPage]);
+    if (error) return <div>Error loading posts</div>;
 
     return (
         <Spin spinning={loading}>
@@ -53,10 +31,10 @@ const PostList = () => {
             />
             <Pagination
                 current={currentPage}
-                total={totalPages * 10}
-                onChange={page => setCurrentPage(page)}
+                total={total}
+                onChange={setCurrentPage}
                 showSizeChanger={false}
-                style={{ marginTop: 20, textAlign: 'center' }}
+                pageSize={10}
             />
         </Spin>
     );

@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import {useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Form, Input, Button, Spin, message } from 'antd';
-import axios from 'axios';
+import usePosts from "../hooks/usePosts";
 
 const layout = {
     labelCol: { span: 4 },
@@ -15,29 +15,15 @@ const EditForm = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [form] = Form.useForm();
-    const [loading, setLoading] = useState(false);
+    const { usePostData, postService } = usePosts();
+    const { post, loading } = usePostData(id);
 
     useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
-            try {
-                const response = await axios.get(
-                    `https://jsonplaceholder.typicode.com/posts/${id}`
-                );
-                const localData = localStorage.getItem(`post-${id}`);
-                form.setFieldsValue({
-                    title: localData ? JSON.parse(localData).title : response.data.title,
-                    body: localData ? JSON.parse(localData).body : response.data.body,
-                });
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchData();
-    }, [id, form]);
+        if (post) form.setFieldsValue(post);
+    }, [post, form]);
 
-    const onFinish = (values) => {
-        localStorage.setItem(`post-${id}`, JSON.stringify(values));
+    const onFinish = async (values) => {
+        await postService.savePost(id, values);
         message.success('Changes saved successfully');
         navigate(`/post/${id}`);
     };
@@ -74,7 +60,7 @@ const EditForm = () => {
                     <Button type="primary" htmlType="submit">
                         Save
                     </Button>
-                    <Button htmlType="button" onClick={() => navigate(-1)} style={{ marginLeft: 8 }}>
+                    <Button htmlType="button" onClick={() => navigate(-1)} style={{ marginLeft: 0 }}>
                         Cancel
                     </Button>
                 </Form.Item>
